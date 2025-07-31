@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./PA_Backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./PA_Backend:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  frontend:
+    build: ./PA_Flutter
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
