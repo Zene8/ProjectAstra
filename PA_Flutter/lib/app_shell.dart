@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // ===== VERIFY YOUR IMPORT PATHS =====
 import 'package:projectastra/services/auth_service.dart'; // Your AuthService
+import 'package:projectastra/services/pfp_service.dart'; // Import PfpService
 import 'package:projectastra/widgets/main_content/main_content_desktop.dart';
 import 'package:projectastra/widgets/navbar/desktop_navbar.dart';
 import 'package:projectastra/widgets/navbar/mobile_navbar.dart';
@@ -12,8 +13,6 @@ import 'package:projectastra/routes/app_routes.dart';
 // Import Provider if you're using it for AuthService
 import 'package:provider/provider.dart';
 
-import 'package:projectastra/widgets/pages/search_page.dart';
-
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -24,11 +23,11 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   // Desktop State
   String _activeDesktopContentId = AppRoutes.home;
-  final List<String> _openTabs = [AppRoutes.home];
-  final List<String> _pinnedTabs = [AppRoutes.home];
+  final List<String> _openTabs = [];
+  final List<String> _pinnedTabs = [];
 
   // Mobile State
-  final int _currentMobilePageIndex = 0;
+  int _currentMobilePageIndex = 0;
   final PageController _mobilePageController = PageController();
   late List<Widget> _mobilePages;
 
@@ -47,6 +46,7 @@ class _AppShellState extends State<AppShell> {
       GlobalKey<MainContentDesktopState>();
 
   late AuthService _authService;
+  late PfpService _pfpService; // Instantiate PfpService
   bool _isAuthServiceInitialized = false;
 
   @override
@@ -60,6 +60,7 @@ class _AppShellState extends State<AppShell> {
     if (!_isAuthServiceInitialized) {
       try {
         _authService = Provider.of<AuthService>(context, listen: false);
+        _pfpService = PfpService(); // Initialize PfpService
         print("AppShell: AuthService successfully obtained from Provider.");
         _initializeMobilePages();
         _isAuthServiceInitialized = true;
@@ -70,6 +71,7 @@ class _AppShellState extends State<AppShell> {
         // In a real app, this path should ideally not be hit if Provider is set up correctly at the root.
         _authService =
             AuthService(); // Ensure this is a conscious decision if Provider is not used.
+        _pfpService = PfpService(); // Initialize PfpService in fallback
         _initializeMobilePages();
         _isAuthServiceInitialized = true;
       }
@@ -138,14 +140,21 @@ class _AppShellState extends State<AppShell> {
     mainContentDesktopKey.currentState?.openWidgetById(tabId);
   }
 
-  mainContentDesktopKey.currentState?.toggleWidgetById(AppRoutes.desktopChat);
+  void _handleDesktopChatToggle() {
+    if (!_openTabs.contains(AppRoutes.desktopChat)) {
+      setState(() {
+        _openTabs.add(AppRoutes.desktopChat);
+      });
+    }
+    mainContentDesktopKey.currentState?.toggleWidgetById(AppRoutes.desktopChat);
   }
 
   void _handleTabClosed(String tabId) {
     setState(() {
       _openTabs.remove(tabId);
       if (_activeDesktopContentId == tabId) {
-        _activeDesktopContentId = _openTabs.isNotEmpty ? _openTabs.last : AppRoutes.home;
+        _activeDesktopContentId =
+            _openTabs.isNotEmpty ? _openTabs.last : AppRoutes.home;
       }
     });
   }
@@ -181,12 +190,30 @@ class _AppShellState extends State<AppShell> {
           child: GridView.count(
             crossAxisCount: 4,
             children: [
-              _AppLauncherItem(icon: Icons.search, label: 'Search', onTap: () => _openTab('Search')),
-              _AppLauncherItem(icon: Icons.article, label: 'Docs', onTap: () => _openTab('Docs')),
-              _AppLauncherItem(icon: Icons.code, label: 'Code', onTap: () => _openTab('Code')),
-              _AppLauncherItem(icon: Icons.attach_money, label: 'Finance', onTap: () => _openTab('Finance')),
-              _AppLauncherItem(icon: Icons.email, label: 'Email', onTap: () => _openTab('Email')),
-              _AppLauncherItem(icon: Icons.calendar_today, label: 'Calendar', onTap: () => _openTab('Calendar')),
+              _AppLauncherItem(
+                  icon: Icons.search,
+                  label: 'Search',
+                  onTap: () => _openTab('Search')),
+              _AppLauncherItem(
+                  icon: Icons.article,
+                  label: 'Docs',
+                  onTap: () => _openTab('Docs')),
+              _AppLauncherItem(
+                  icon: Icons.code,
+                  label: 'Code',
+                  onTap: () => _openTab('Code')),
+              _AppLauncherItem(
+                  icon: Icons.attach_money,
+                  label: 'Finance',
+                  onTap: () => _openTab('Finance')),
+              _AppLauncherItem(
+                  icon: Icons.email,
+                  label: 'Email',
+                  onTap: () => _openTab('Email')),
+              _AppLauncherItem(
+                  icon: Icons.calendar_today,
+                  label: 'Calendar',
+                  onTap: () => _openTab('Calendar')),
             ],
           ),
         ),
@@ -208,6 +235,24 @@ class _AppShellState extends State<AppShell> {
     }
     _onDesktopTabSelected(tabId);
     Navigator.of(context).pop(); // Close the launcher
+  }
+
+  Future<void> _handleProfilePicturePressed() async {
+    print("Attempting to change profile picture...");
+    final pickedFile = await _pfpService.pickImage();
+    if (pickedFile != null) {
+      print("Image picked: ${pickedFile.path}");
+      final photoUrl = await _pfpService.uploadProfilePicture(pickedFile);
+      if (photoUrl != null) {
+        print("Profile picture updated to: $photoUrl");
+        // No need for setState here, as StreamBuilder in DesktopNavbar listens to authStateChanges
+        // and will rebuild automatically when photoURL changes.
+      } else {
+        print("Failed to upload profile picture.");
+      }
+    } else {
+      print("Image picking cancelled.");
+    }
   }
 
   @override
@@ -247,6 +292,10 @@ class _AppShellState extends State<AppShell> {
               onChatToggle: _handleDesktopChatToggle,
               onProfilePressed: _handleDesktopProfilePressed,
               onAppLauncherPressed: _showAppLauncher,
+              onRestoreTab: (tabId) =>
+                  mainContentDesktopKey.currentState?.restoreWidget(tabId),
+              onProfilePicturePressed:
+                  _handleProfilePicturePressed, // Pass the new callback
             ),
           Expanded(
             child: isMobile

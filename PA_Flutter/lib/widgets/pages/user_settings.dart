@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // For User object
+import 'package:provider/provider.dart';
+import 'package:projectastra/theme/theme_notifier.dart';
+import 'package:url_launcher/url_launcher.dart'; // For launching URLs
+import 'package:http/http.dart' as http; // For making HTTP requests
+import 'dart:convert'; // For JSON encoding/decoding
 // Adjust the import path to your AuthService location
 import 'package:projectastra/services/auth_service.dart'; // Placeholder - ADJUST THIS PATH
 // Adjust the import path to your AuthModal location
@@ -358,11 +363,110 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     );
   }
 
-  Future<void> _connectGmail(BuildContext context) async {
-    /* ... (as before) ... */
+  Future<void> _connectGoogleGmail(BuildContext context) async {
+    try {
+      final response = await http.get(Uri.parse('http://localhost:5000/google_gmail_auth'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final String authorizationUrl = data['authorization_url'];
+        if (await canLaunchUrl(Uri.parse(authorizationUrl))) {
+          await launchUrl(Uri.parse(authorizationUrl));
+        } else {
+          throw 'Could not launch $authorizationUrl';
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to initiate Google Gmail connection: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error connecting Google Gmail: $e')),
+      );
+    }
   }
   Future<void> _disconnectGmail(BuildContext context) async {
     /* ... (as before) ... */
+  }
+
+  Future<void> _connectGoogleCalendar(BuildContext context) async {
+    try {
+      final response = await http.get(Uri.parse('http://localhost:5000/google_calendar_auth'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final String authorizationUrl = data['authorization_url'];
+        if (await canLaunchUrl(Uri.parse(authorizationUrl))) {
+          await launchUrl(Uri.parse(authorizationUrl));
+        } else {
+          throw 'Could not launch $authorizationUrl';
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to initiate Google Calendar connection: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error connecting Google Calendar: $e')),
+      );
+    }
+  }
+
+  Future<void> _connectGoogleTasks(BuildContext context) async {
+    try {
+      final response = await http.get(Uri.parse('http://localhost:5000/google_tasks_auth'));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final String authorizationUrl = data['authorization_url'];
+        if (await canLaunchUrl(Uri.parse(authorizationUrl))) {
+          await launchUrl(Uri.parse(authorizationUrl));
+        } else {
+          throw 'Could not launch $authorizationUrl';
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to initiate Google Tasks connection: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error connecting Google Tasks: $e')),
+      );
+    }
+  }
+
+  void _showThemePicker(BuildContext context) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Select Theme'),
+          content: SizedBox(
+            width: double.minPositive,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: themeNotifier.availableThemes.length,
+              itemBuilder: (BuildContext context, int index) {
+                final themeName =
+                    themeNotifier.availableThemes.keys.elementAt(index);
+                return RadioListTile<String>(
+                  title: Text(themeName),
+                  value: themeName,
+                  groupValue: themeNotifier.currentThemeName,
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      themeNotifier.setTheme(newValue);
+                      Navigator.of(dialogContext).pop();
+                    }
+                  },
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -524,12 +628,33 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                   leading: Icon(Icons.email_outlined, color: listTileIconColor),
                   title: Text('Gmail', style: listTileTitleStyle),
                   trailing: ElevatedButton(
-                    // Placeholder
-                    onPressed: () => _connectGmail(context),
+                    onPressed: () => _connectGoogleGmail(context),
                     child: Text("Connect"),
                   ),
                   onTap: () {
-                    _connectGmail(context);
+                    _connectGoogleGmail(context);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.calendar_today_outlined, color: listTileIconColor),
+                  title: Text('Google Calendar', style: listTileTitleStyle),
+                  trailing: ElevatedButton(
+                    onPressed: () => _connectGoogleCalendar(context),
+                    child: Text("Connect"),
+                  ),
+                  onTap: () {
+                    _connectGoogleCalendar(context);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.task_alt_outlined, color: listTileIconColor),
+                  title: Text('Google Tasks', style: listTileTitleStyle),
+                  trailing: ElevatedButton(
+                    onPressed: () => _connectGoogleTasks(context),
+                    child: Text("Connect"),
+                  ),
+                  onTap: () {
+                    _connectGoogleTasks(context);
                   },
                 ),
                 const SizedBox(height: 32),
@@ -541,45 +666,7 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                   leading: Icon(Icons.color_lens_outlined, color: listTileIconColor),
                   title: Text('Theme Settings', style: listTileTitleStyle),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    // TODO: Implement theme customization dialog
-                    print("Theme settings tapped");
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content:
-                              Text('Theme customization not implemented yet.')),
-                    );
-                  },
-                ),
-                SwitchListTile(
-                  secondary:
-                      Icon(Icons.dark_mode_outlined, color: listTileIconColor),
-                  title: Text('Dark Mode', style: listTileTitleStyle),
-                  value: Theme.of(context).brightness == Brightness.dark,
-                  onChanged: (val) {
-                    print("Dark Mode toggled: $val");
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content:
-                              Text('Theme switching not implemented yet.')),
-                    );
-                  },
-                  activeColor: Colors.lightBlueAccent,
-                ),
-                SwitchListTile(
-                  secondary: Icon(Icons.notifications_outlined,
-                      color: listTileIconColor),
-                  title: Text('Notifications', style: listTileTitleStyle),
-                  value: true,
-                  onChanged: (val) {
-                    print("Notifications toggled: $val");
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text(
-                              'Notification settings not implemented yet.')),
-                    );
-                  },
-                  activeColor: Colors.lightBlueAccent,
+                  onTap: () => _showThemePicker(context),
                 ),
 
                 const SizedBox(height: 32),

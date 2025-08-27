@@ -159,7 +159,7 @@ class AuthService {
       }
 
       print("Google Sign-In successful: ${userCredential.user?.displayName}");
-          return userCredential;
+      return userCredential;
     } on FirebaseAuthException catch (e) {
       print(
           "Firebase Auth Exception during Google Sign-In: ${e.message} (Code: ${e.code})");

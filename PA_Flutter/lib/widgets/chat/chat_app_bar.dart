@@ -14,7 +14,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onMenuPressed,
     this.onNewChatPressed,
     this.onMoreOptionsPressed,
-    this.title = "Astra AI",
+    this.title = "Astrium Suites",
     required this.backgroundColor,
     this.iconColor = Colors.white,
     this.titleColor = Colors.lightBlueAccent,

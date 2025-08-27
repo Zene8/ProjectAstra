@@ -5,51 +5,63 @@ publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.2.0 <4.0.0" # Example of a common Flutter project Dart SDK constraint, adjust if needed or keep ^3.7.2 if appropriate
+  sdk: ">=3.2.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
 
-  # === REPLACE 'any' with specific versions from pubspec.lock after successful 'pub get' ===
-  table_calendar: any # e.g., ^3.1.0
-  http: ^1.4.0 # e.g., ^1.2.1
-  flutter_markdown: any # e.g., ^0.7.3
-  # REMOVE: markdown: ^7.2.2
-  flutter_markdown_latex: any # e.g., ^3.0.2
-  highlight: any # e.g., ^0.7.0
-  flutter_math_fork: any # e.g., ^0.7.2 (or let flutter_markdown_latex handle it)
-  flutter_inappwebview: ^6.0.0 # Add this line
-  flutter_quill: ^9.0.0 # Add this line
-  flutter_code_editor: ^0.3.0 # Add this line
-  googleapis: ^13.1.0 # Add this line
-  googleapis_auth: ^1.6.0 # Add this line
-  cupertino_icons: any # e.g., ^1.0.8
-  lucide_icons: any # e.g., ^0.395.0 or similar latest
+  # UI & Utilities
+  cupertino_icons: ^1.0.8
+  lucide_icons: ^0.257.0
+  provider: ^6.1.2
+  intl: 0.20.2
 
-  # Hive dependencies (these are good as they are)
-  hive: ^2.2.3
-  hive_flutter: ^1.1.0
-  path_provider: ^2.1.3
+  # Firebase & Auth
   firebase_core: ^3.13.1
   firebase_auth: ^5.5.4
   google_sign_in: ^6.3.0
-  firebase_core_platform_interface: ^5.4.0
-  #desktop_webview_auth: ^0.0.15
+  google_sign_in_all_platforms: ^1.1.0
   cloud_firestore: ^5.6.8
-  google_sign_in_all_platforms: any
-  url_launcher: any
+  image_picker: ^1.1.2
+  firebase_storage: ^12.1.0
+
+  # Backend Communication
+  http: ^1.4.0
+
+  # Local Storage
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.5
+
+  # Feature-specific
+  table_calendar: ^3.2.0
+  flutter_markdown: ^0.7.7+1
+  flutter_markdown_latex: ^0.3.4
+  highlight: ^0.7.0
+  flutter_math_fork: ^0.7.4
+  webview_flutter: ^4.7.0
+  flutter_quill: 11.4.2
+  flutter_code_editor: ^0.3.4
+  googleapis: ^13.2.0
+  googleapis_auth: ^1.6.0
+  url_launcher: ^6.3.1
+  hotkey_manager: 0.2.3
+
+  # Finance Module Additions
+  plaid_flutter: ^3.0.0
+  fl_chart: ^0.68.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^6.0.0 # Corrected to a likely valid version
+  flutter_lints: ^6.0.0
   hive_generator: ^2.0.1
   build_runner: ^2.4.9
 
 flutter:
   uses-material-design: true
   assets:
-    - assets/AstraPfP.png
-    - assets/AstraLogo.png
+    - assets/AstriumLogo.png
     - assets/UserProfile.png

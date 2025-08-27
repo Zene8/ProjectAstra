@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -9,9 +9,34 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  late InAppWebViewController _webViewController;
+  late final WebViewController _webViewController;
   final TextEditingController _urlController = TextEditingController();
   String _url = "https://www.google.com";
+
+  @override
+  void initState() {
+    super.initState();
+    _webViewController = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            // Update loading bar.
+          },
+          onPageStarted: (String url) {
+            setState(() {
+              _urlController.text = url;
+            });
+          },
+          onPageFinished: (String url) {},
+          onWebResourceError: (WebResourceError error) {},
+          onNavigationRequest: (NavigationRequest request) {
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(_url));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,17 +52,25 @@ class _SearchPageState extends State<SearchPage> {
             setState(() {
               _url = url;
             });
-            _webViewController.loadUrl(urlRequest: URLRequest(url: WebUri(_url)));
+            _webViewController.loadRequest(Uri.parse(_url));
           },
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => _webViewController.goBack(),
+            onPressed: () async {
+              if (await _webViewController.canGoBack()) {
+                _webViewController.goBack();
+              }
+            },
           ),
           IconButton(
             icon: const Icon(Icons.arrow_forward),
-            onPressed: () => _webViewController.goForward(),
+            onPressed: () async {
+              if (await _webViewController.canGoForward()) {
+                _webViewController.goForward();
+              }
+            },
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -45,17 +78,7 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ],
       ),
-      body: InAppWebView(
-        initialUrlRequest: URLRequest(url: WebUri(_url)),
-        onWebViewCreated: (controller) {
-          _webViewController = controller;
-        },
-        onLoadStart: (controller, url) {
-          setState(() {
-            _urlController.text = url.toString();
-          });
-        },
-      ),
+      body: WebViewWidget(controller: _webViewController),
     );
   }
 }

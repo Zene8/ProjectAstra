@@ -3,8 +3,8 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  irondash_engine_context
-  super_native_extensions
+  file_selector_linux
+  hotkey_manager_linux
   url_launcher_linux
 )
 

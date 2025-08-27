@@ -1,68 +1,110 @@
-// lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
-import 'package:projectastra/theme/app_colors.dart'; // Import the new colors
+import 'package:projectastra/theme/theme_parser.dart';
 
 class AppTheme {
-  static final darkTheme = ThemeData.dark().copyWith(
-    scaffoldBackgroundColor: AppColors.bg,
-    cardColor: AppColors.bgLight,
-    textTheme: ThemeData.dark().textTheme.apply(
-          bodyColor: AppColors.text,
-          displayColor: AppColors.text,
-        ),
-    // Define button themes
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        foregroundColor: AppColors.bg,
-        backgroundColor: AppColors.primary,
+  static ThemeData fromParsedTheme(ParsedTheme parsedTheme) {
+    return ThemeData(
+      brightness: parsedTheme.name.toLowerCase().contains('dark')
+          ? Brightness.dark
+          : Brightness.light,
+      primaryColor: parsedTheme.colors['Primary'],
+      colorScheme: ColorScheme(
+        primary: parsedTheme.colors['Primary']!,
+        onPrimary: parsedTheme.colors['OnPrimary']!,
+        secondary: parsedTheme.colors['Secondary']!,
+        onSecondary: parsedTheme.colors['OnSecondary']!,
+        error: parsedTheme.colors['Error']!,
+        onError: parsedTheme.colors['OnError']!,
+        surface: parsedTheme.colors['Surface']!,
+        onSurface: parsedTheme.colors['OnSurface']!,
+        brightness: parsedTheme.name.toLowerCase().contains('dark')
+            ? Brightness.dark
+            : Brightness.light,
+      ),
+      scaffoldBackgroundColor: parsedTheme.colors['Background'],
+      appBarTheme: AppBarTheme(
+        backgroundColor: parsedTheme.colors['Surface'],
+        foregroundColor: parsedTheme.colors['OnSurface'],
+        elevation: 4,
+      ),
+      // FIX: Use CardThemeData instead of CardTheme for older Flutter versions.
+      cardTheme: CardThemeData(
+        color: parsedTheme.colors['Surface'],
+        elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4.0),
+          borderRadius: BorderRadius.circular(10),
         ),
-        shadowColor: Colors.black.withOpacity(0.5),
-        elevation: 5,
       ),
-    ),
-    // Define card themes for window styling
-    cardTheme: CardTheme(
-      elevation: 8,
-      shadowColor: Colors.black.withOpacity(0.5),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4.0),
-        side: BorderSide(color: AppColors.border, width: 1),
+      buttonTheme: ButtonThemeData(
+        buttonColor: parsedTheme.colors['Primary'],
+        textTheme: ButtonTextTheme.primary,
       ),
-    ),
-    // Define input decoration for text fields
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: AppColors.bgLight,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(4.0),
-        borderSide: BorderSide(color: AppColors.borderMuted),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: parsedTheme.colors['Primary'],
+          foregroundColor: parsedTheme.colors['OnPrimary'],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        ),
       ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(4.0),
-        borderSide: BorderSide(color: AppColors.borderMuted),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: parsedTheme.colors['Secondary'],
+        ),
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(4.0),
-        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: parsedTheme.colors['Surface'],
+        labelStyle: TextStyle(color: parsedTheme.colors['OnSurface']),
+        hintStyle:
+            TextStyle(color: parsedTheme.colors['OnSurface']!.withOpacity(0.6)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
       ),
-      hintStyle: const TextStyle(color: AppColors.textMuted),
-    ),
-    // Define the color scheme
-    colorScheme: const ColorScheme(
-      brightness: Brightness.dark,
-      primary: AppColors.primary,
-      onPrimary: AppColors.bg,
-      secondary: AppColors.secondary,
-      onSecondary: AppColors.bg,
-      error: AppColors.danger,
-      onError: AppColors.text,
-      surface: AppColors.bgLight,
-      onSurface: AppColors.text,
-      surfaceContainerHighest: AppColors.bgLight,
-      onSurfaceVariant: AppColors.textMuted,
-    ),
-  );
+      textTheme: TextTheme(
+        headlineMedium: TextStyle(
+          fontFamily: parsedTheme.typography['FontFamily'],
+          fontSize: double.tryParse(parsedTheme.typography['Heading1']
+                  ?.split(',')[0]
+                  .replaceAll('px', '')
+                  .trim() ??
+              '32'),
+          fontWeight: FontWeight.bold,
+          color: parsedTheme.colors['OnBackground'],
+        ),
+        titleMedium: TextStyle(
+          fontFamily: parsedTheme.typography['FontFamily'],
+          fontSize: double.tryParse(parsedTheme.typography['BodyText']
+                  ?.split(',')[0]
+                  .replaceAll('px', '')
+                  .trim() ??
+              '16'),
+          fontWeight: FontWeight.normal,
+          color: parsedTheme.colors['OnBackground'],
+        ),
+        bodyMedium: TextStyle(
+          fontFamily: parsedTheme.typography['FontFamily'],
+          fontSize: double.tryParse(parsedTheme.typography['BodyText']
+                  ?.split(',')[0]
+                  .replaceAll('px', '')
+                  .trim() ??
+              '16'),
+          color: parsedTheme.colors['OnBackground'],
+        ),
+        bodySmall: TextStyle(
+          fontFamily: parsedTheme.typography['FontFamily'],
+          fontSize: double.tryParse(parsedTheme.typography['SmallText']
+                  ?.split(',')[0]
+                  .replaceAll('px', '')
+                  .trim() ??
+              '12'),
+          color: parsedTheme.colors['OnBackground'],
+        ),
+      ),
+    );
+  }
 }

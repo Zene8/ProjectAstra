@@ -1,5 +1,6 @@
 // Suggested path: projectastra/features/navbar/mobile_navbar.dart
 import 'package:flutter/material.dart';
+import 'package:projectastra/theme/app_colors.dart'; // Import AppColors
 
 class BottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -24,7 +25,7 @@ class BottomNavBar extends StatelessWidget {
         Colors.lightBlueAccent; // Color for selected/active items
 
     return BottomNavigationBar(
-      backgroundColor: Colors.grey[850],
+      backgroundColor: AppColors.darkBackground, // Use the new dark background color
       currentIndex: currentIndex,
       selectedItemColor: activeColor,
       unselectedItemColor: Colors.white70,
@@ -56,7 +57,7 @@ class BottomNavBar extends StatelessWidget {
         // Index 1: Chat with Custom Logo
         BottomNavigationBarItem(
           icon: Image.asset(
-            'assets/AstraLogo.png', // IMPORTANT: Replace with your actual logo path
+            'assets/AstriumLogo.png', // Updated logo path
             width: iconSize * 1.2, // Slightly larger for a logo
             height: iconSize * 1.2,
             // Optionally apply a color filter if your logo is monochrome and needs tinting
@@ -82,7 +83,7 @@ class BottomNavBar extends StatelessWidget {
               shape: BoxShape.circle, // Circular outline
             ),
             child: Image.asset(
-              'assets/AstraLogo.png', // Replace with your actual logo path
+              'assets/AstriumLogo.png', // Updated logo path
               width: iconSize * 1.2 -
                   4, // Image slightly smaller to fit within border
               height: iconSize * 1.2 - 4,

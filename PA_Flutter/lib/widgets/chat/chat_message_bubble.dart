@@ -1,12 +1,9 @@
-import 'package:flutter/material.dart'; // Or 'package:flutter/widgets.dart';
-import 'package:markdown/markdown.dart' as md; // ✅ // THIS IS THE KEY
-// ... your other imports for models, highlighter ...
+import 'package:flutter/material.dart';
+import 'package:markdown/markdown.dart' as md;
 import 'package:projectastra/models/chat_models.dart';
 import 'package:projectastra/widgets/chat/code_element_highlighter.dart';
 import 'package:flutter_markdown_latex/flutter_markdown_latex.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-
-//import 'package:url_launcher/url_launcher.dart'; // Uncomment if you use launchUrl
 
 class ChatMessageBubble extends StatefulWidget {
   final ChatMessage message;
@@ -33,8 +30,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start;
     final bubbleColor = isUser
         ? theme.colorScheme.primary
-        : theme.colorScheme
-            .surfaceContainerHighest; // Or theme.colorScheme.surfaceVariant;
+        : theme.colorScheme.surfaceContainerHighest;
     final textColorOnBubble = isUser
         ? theme.colorScheme.onPrimary
         : theme.colorScheme.onSurfaceVariant;
@@ -42,19 +38,13 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     Widget avatarImage;
     try {
       avatarImage = Image.asset(
-        'assets/AstraPfP.png', // Ensure this path is correct and asset is in pubspec.yaml
+        'assets/AstraPfP.png', // AI chat profile picture
         width: 36,
         height: 36,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          return CircleAvatar(
-            radius: 18,
-            backgroundColor: theme.colorScheme.secondaryContainer,
-            child: Icon(
-              isUser ? Icons.person_outline : Icons.hub_outlined,
-              size: 20,
-              color: theme.colorScheme.onSecondaryContainer,
-            ),
+          return const CircleAvatar(
+            child: Icon(Icons.person),
           );
         },
       );
@@ -72,7 +62,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
     }
     final avatar = ClipOval(child: avatarImage);
 
-    // Stylesheet for the main message body
     final mainMarkdownStyleSheet = MarkdownStyleSheet.fromTheme(theme).copyWith(
       p: theme.textTheme.bodyMedium?.copyWith(
         color: textColorOnBubble,
@@ -184,7 +173,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
       ),
     );
 
-    // Stylesheet specifically for the thinking text
     final thinkingMarkdownStyleSheet = MarkdownStyleSheet.fromTheme(
       theme,
     ).copyWith(
@@ -201,7 +189,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
             0.95, // Slightly smaller
       ),
       codeblockDecoration: BoxDecoration(
-        // Simpler decoration for thoughts
         color: theme.colorScheme.surface.withOpacity(0.5),
         borderRadius: BorderRadius.circular(4.0),
       ),
@@ -209,7 +196,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
       listBullet: theme.textTheme.bodySmall?.copyWith(
         color: theme.textTheme.bodySmall?.color?.withOpacity(0.85),
       ),
-      // Inherit other styles or define minimally as needed for thoughts
     );
 
     Widget thinkingWidget = const SizedBox.shrink();
@@ -217,14 +203,11 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
         widget.message.thinkingText != null &&
         widget.message.thinkingText!.isNotEmpty &&
         !(widget.message.text.trim() == '...' && !isUser)) {
-      // Don't show for "..." placeholder
       thinkingWidget = Padding(
         padding: EdgeInsets.only(
-          // Align with the main bubble content, considering avatar
-          left: !isUser ? (36.0 + 8.0) : 0, // Avatar width (36) + padding (8)
-          right:
-              0, // No right padding needed typically for left-aligned thoughts
-          bottom: 8.0, // Space between thought and main bubble below it
+          left: !isUser ? (36.0 + 8.0) : 0,
+          right: 0,
+          bottom: 8.0,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,24 +256,19 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
             ),
             if (_isThinkingExpanded)
               Container(
-                // Container to give padding and slight visual distinction if needed
                 padding: const EdgeInsets.only(
                   top: 4.0,
                   left: 8.0,
                   right: 8.0,
-                ), // Indent actual thought
-                width: double
-                    .infinity, // Allow MarkdownBody to take available width
+                ),
+                width: double.infinity,
                 child: MarkdownBody(
                   data: widget.message.thinkingText!,
                   selectable: true,
                   styleSheet: thinkingMarkdownStyleSheet,
-                  // Optionally, for thoughts, you might use a more basic extension set
-                  // extensionSet: md.ExtensionSet.commonMark,
                 ),
               )
-            else if (widget.message.thinkingText!.length >
-                60) // Show snippet if collapsed & long
+            else if (widget.message.thinkingText!.length > 60)
               Padding(
                 padding: const EdgeInsets.only(top: 2.0, left: 8.0, right: 8.0),
                 child: Text(
@@ -313,9 +291,7 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
       child: Column(
         crossAxisAlignment: bubbleAlignment,
         children: [
-          // THOUGHT WIDGET MOVED HERE (ABOVE MAIN MESSAGE)
           if (!isUser) thinkingWidget,
-
           Row(
             mainAxisAlignment:
                 isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
@@ -367,7 +343,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                               selectable: true,
                               syntaxHighlighter: widget.codeHighlighter,
                               extensionSet: md.ExtensionSet(
-                                // Combined ExtensionSet for main answer
                                 [
                                   ...md.ExtensionSet.gitHubWeb.blockSyntaxes,
                                   LatexBlockSyntax(),
@@ -380,15 +355,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                               styleSheet: mainMarkdownStyleSheet,
                               onTapLink: (text, href, title) {
                                 print("Link tapped: $href");
-                                // if (href != null) {
-                                //   final uri = Uri.tryParse(href);
-                                //   if (uri != null /* && await canLaunchUrl(uri) */) {
-                                //     // await launchUrl(uri);
-                                //     print("Would launch: $uri");
-                                //   } else {
-                                //     print('Could not parse or launch $href');
-                                //   }
-                                // }
                               },
                             ),
                 ),
@@ -400,14 +366,12 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                 ),
             ],
           ),
-          // Original position of thinkingWidget removed
         ],
       ),
     );
   }
 }
 
-// _LoadingDots widget (ensure this is defined in this file or correctly imported)
 class _LoadingDots extends StatefulWidget {
   const _LoadingDots();
   @override

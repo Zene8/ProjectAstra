@@ -7,9 +7,12 @@ import io
 
 from .. import models
 from ..database import get_session
-from .finance import crud, schemas, security
+from . import crud, schemas, security
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/finance",
+    tags=["finance"],
+)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/finance/token")
 
@@ -46,50 +49,114 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@router.post("/users/", response_model=schemas.User)
+@router.post("/users/", response_model=schemas.UserRead)
 async def create_user(user: schemas.UserCreate, db: Session = Depends(get_session)):
     db_user = crud.get_user_by_username(db, username=user.username)
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
     return crud.create_user(db=db, user=user)
 
-@router.get("/users/me/", response_model=schemas.User)
-async def read_users_me(current_user: schemas.User = Depends(get_current_user)):
+@router.get("/users/me/", response_model=schemas.UserRead)
+async def read_users_me(current_user: models.User = Depends(get_current_user)):
     return current_user
 
-@router.post("/users/me/transactions/", response_model=schemas.Transaction)
+# --- Transaction Endpoints ---
+@router.post("/transactions/", response_model=schemas.TransactionRead)
 async def create_transaction_for_user(
     transaction: schemas.TransactionCreate,
-    current_user: schemas.User = Depends(get_current_user),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_session)
 ):
     return crud.create_transaction(db=db, transaction=transaction, user_id=current_user.id)
 
-@router.get("/users/me/transactions/", response_model=list[schemas.Transaction])
+@router.get("/transactions/", response_model=list[schemas.TransactionRead])
 async def read_transactions_for_user(
     skip: int = 0,
     limit: int = 100,
-    current_user: schemas.User = Depends(get_current_user),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_session)
 ):
     return crud.get_transactions(db=db, user_id=current_user.id, skip=skip, limit=limit)
 
-@router.post("/users/me/transactions/upload_csv/")
+@router.post("/transactions/import/csv")
 async def create_upload_file(
     file: UploadFile = File(...),
-    current_user: schemas.User = Depends(get_current_user),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_session)
 ):
     if file.content_type != 'text/csv':
         raise HTTPException(status_code=400, detail="Invalid file type")
-
-    contents = await file.read()
-
-    # In-memory file-like object
-    csv_file = io.StringIO(contents.decode('utf-8'))
-
     try:
+        contents = await file.read()
+        csv_file = io.StringIO(contents.decode('utf-8'))
         transactions = crud.create_transactions_from_csv(db=db, user_id=current_user.id, file=csv_file)
         return {"message": f"{len(transactions)} transactions uploaded successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error processing CSV file: {e}")
+
+# --- Budget Endpoints ---
+@router.post("/budgets/", response_model=schemas.BudgetRead)
+async def create_budget(
+    budget: schemas.BudgetCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_session)
+):
+    return crud.create_budget(db=db, budget=budget, user_id=current_user.id)
+
+@router.get("/budgets/", response_model=list[schemas.BudgetRead])
+async def read_budgets(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_session)
+):
+    return crud.get_budgets(db=db, user_id=current_user.id)
+
+# --- Recurring Expense Endpoints ---
+@router.post("/recurring-expenses/", response_model=schemas.RecurringExpenseRead)
+async def create_recurring_expense(
+    expense: schemas.RecurringExpenseCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_session)
+):
+    return crud.create_recurring_expense(db=db, expense=expense, user_id=current_user.id)
+
+@router.get("/recurring-expenses/", response_model=list[schemas.RecurringExpenseRead])
+async def read_recurring_expenses(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_session)
+):
+    return crud.get_recurring_expenses(db=db, user_id=current_user.id)
+
+# --- Collaborative Finance Endpoints ---
+@router.post("/attributions/", response_model=schemas.ExpenseAttributionRead)
+async def create_expense_attribution(
+    attribution: schemas.ExpenseAttributionCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_session)
+):
+    return crud.create_expense_attribution(db=db, attribution=attribution, attributing_user_id=current_user.id)
+
+@router.put("/attributions/{attribution_id}/approve", response_model=schemas.ExpenseAttributionRead)
+async def approve_expense_attribution(
+    attribution_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_session)
+):
+    db_attribution = crud.get_expense_attribution(db, attribution_id)
+    if not db_attribution or db_attribution.attributed_to_user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Expense attribution not found or not authorized")
+    return crud.approve_expense_attribution(db=db, attribution_id=attribution_id)
+
+@router.post("/invoices/", response_model=schemas.InvoiceRead)
+async def create_invoice(
+    invoice: schemas.InvoiceCreate,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_session)
+):
+    return crud.create_invoice(db=db, invoice=invoice, from_user_id=current_user.id)
+
+@router.get("/invoices/", response_model=list[schemas.InvoiceRead])
+async def read_invoices(
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_session)
+):
+    return crud.get_invoices(db=db, user_id=current_user.id)

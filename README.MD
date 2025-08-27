@@ -1,7 +1,6 @@
 # Project Astra 🌟
 
 Project Astra is an intelligent conversational AI assistant designed to provide versatile support across a range of tasks, including coding, writing, analysis, and general assistance. It leverages a sophisticated ReAct (Reasoning and Acting) framework, allowing it to use tools and maintain context for more insightful interactions.
-
 ## ✨ Core Features
 
 - **Conversational Interface:** Engage in natural language dialogues.

@@ -26,6 +26,12 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   @override
+  void dispose() {
+    _taskController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(

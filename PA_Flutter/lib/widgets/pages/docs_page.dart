@@ -15,31 +15,17 @@ class _DocsPageState extends State<DocsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        toolbarHeight: 40,
-        title: QuillToolbar.simple(
-          configurations: QuillSimpleToolbarConfigurations(
-            controller: _controller,
-            sharedConfigurations: const QuillSharedConfigurations(
-              locale: Locale('en'),
-            ),
-          ),
-        ),
+        title: const Text('Document Editor'),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: QuillEditor.basic(
-              configurations: QuillEditorConfigurations(
-                controller: _controller,
-                readOnly: false,
-                sharedConfigurations: const QuillSharedConfigurations(
-                  locale: Locale('en'),
-                ),
-              ),
-            ),
-          )
-        ],
+      body: QuillEditor.basic(
+        controller: _controller,
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 }

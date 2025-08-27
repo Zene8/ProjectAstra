@@ -1,5 +1,7 @@
 // Suggested path: lib/features/navbar/desktop_navbar.dart
 import 'package:flutter/material.dart';
+import 'package:projectastra/theme/app_colors.dart'; // Import AppColors
+
 // Assuming AppRoutes is defined and imported if you use it for the home tab ID
 // For example: import 'package:projectastra/routes/app_routes.dart';
 
@@ -10,14 +12,19 @@ class DesktopNavbar extends StatelessWidget {
   final List<String> openTabs; // New: List of open tabs
   final List<String> pinnedTabs; // Renamed from 'tabs' to be more descriptive
   final void Function(String tabId) onTabSelected;
-  final void Function(String tabId) onTabClosed; // New: Callback for closing a tab
-  final void Function(String tabId) onTabPinned; // New: Callback for pinning a tab
+  final void Function(String tabId)
+      onTabClosed; // New: Callback for closing a tab
+  final void Function(String tabId)
+      onTabPinned; // New: Callback for pinning a tab
   final VoidCallback?
       onProfilePressed; // Callback for when profile icon is pressed
+  final void Function(String tabId)
+      onRestoreTab; // New: Callback for restoring a minimized tab
+  final VoidCallback? onProfilePicturePressed; // New: Callback for changing profile picture
 
   // Default list of tabs if none are provided from AppShell.
   // In a real app, this list would likely be managed by AppShell's state.
-  static const List<String> _defaultPinnedTabs = ['Home', 'Contacts', 'Help'];
+  static const List<String> _defaultPinnedTabs = ['Contacts', 'Help'];
 
   const DesktopNavbar({
     super.key,
@@ -28,8 +35,11 @@ class DesktopNavbar extends StatelessWidget {
     required this.onTabSelected,
     required this.onTabClosed,
     required this.onTabPinned,
-    this.pinnedTabs = _defaultPinnedTabs, // Use the default if no specific pinned tabs are passed
+    required this.onRestoreTab,
+    this.pinnedTabs =
+        _defaultPinnedTabs, // Use the default if no specific pinned tabs are passed
     this.onProfilePressed,
+    this.onProfilePicturePressed, // Initialize the new callback
   });
 
   @override
@@ -44,7 +54,7 @@ class DesktopNavbar extends StatelessWidget {
         horizontal: width * 0.02 > 24 ? width * 0.02 : 24,
       ), // Ensure min padding
       decoration: BoxDecoration(
-        color: Colors.grey[850],
+        color: AppColors.darkBackground, // Use the new dark background color
         boxShadow: const [
           BoxShadow(
             color: Colors.black26,
@@ -56,42 +66,25 @@ class DesktopNavbar extends StatelessWidget {
       child: Row(
         children: [
           // Left: Logo & Title (Clickable to go to Home)
-          GestureDetector(
-            onTap: () => onTabSelected(homeTabId), // Navigate to Home
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/AstraLogo.png', // Ensure this asset exists
-                    width: 36, // Slightly adjusted size
-                    height: 36,
-                    errorBuilder: (context, error, stackTrace) {
-                      // Fallback if logo doesn't load
-                      return const Icon(
-                        Icons.blur_on,
-                        size: 36,
-                        color: Colors.lightBlueAccent,
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    "Astra AI",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.lightBlueAccent,
-                    ),
-                  ),
-                ],
+          Row(
+            children: [
+              Image.asset(
+                'assets/AstriumLogo.png', // Updated logo path
+                width: 48, // Much bigger size
+                height: 48,
+                errorBuilder: (context, error, stackTrace) {
+                  // Fallback if logo doesn't load
+                  return const Icon(
+                    Icons.blur_on,
+                    size: 24,
+                    color: Colors.lightBlueAccent,
+                  );
+                },
               ),
-            ),
+              const SizedBox(width: 8),
+            ],
           ),
-
-          const SizedBox(width: 32),
-
-          // Center: Pinned Tabs and Open Tabs
+          const SizedBox(width: 16),
           Expanded(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -102,17 +95,20 @@ class DesktopNavbar extends StatelessWidget {
                     icon: _getIconForTab(tabId), // Helper to get icon for tab
                     isActive: activeTab == tabId,
                     onTap: () => onTabSelected(tabId),
+                    onRestore: () => onRestoreTab(tabId),
                   ),
-                const VerticalDivider(width: 1, color: Colors.white24),
                 const SizedBox(width: 8),
                 // Display the open (unpinned) tabs
-                for (final tabId in openTabs.where((t) => !pinnedTabs.contains(t)))
+                for (final tabId
+                    in openTabs.where((t) => !pinnedTabs.contains(t)))
                   _OpenTabItem(
                     label: tabId,
                     isActive: activeTab == tabId,
                     onTap: () => onTabSelected(tabId),
                     onClose: () => onTabClosed(tabId),
                     onPin: () => onTabPinned(tabId),
+                    // FIX: Added the missing 'onRestore' parameter
+                    onRestore: () => onRestoreTab(tabId),
                   ),
               ],
             ),
@@ -138,46 +134,7 @@ class DesktopNavbar extends StatelessWidget {
                   onPressed: onChatToggle,
                 ),
               ),
-              const SizedBox(width: 4), // Spacing between icons
-              Tooltip(
-                message: 'Menu', // Or "More Options"
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.more_vert,
-                  ), // Changed to more_vert for common menu
-                  color: Colors.white,
-                  onPressed: () {
-                    // TODO: Implement a dropdown menu or sidebar toggle
-                    print("DesktopNavbar: Menu/More Options pressed");
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              Tooltip(
-                message: 'Profile & Settings',
-                child: GestureDetector(
-                  onTap: onProfilePressed, // Call the new callback
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: CircleAvatar(
-                      radius: 18, // Slightly adjusted size
-                      // IMPORTANT: Ensure 'assets/UserProfile.png' exists
-                      backgroundImage: const AssetImage(
-                        'assets/UserProfile.png',
-                      ),
-                      onBackgroundImageError: (exception, stackTrace) {
-                        // Fallback if profile image doesn't load
-                        print("Error loading UserProfile.png: $exception");
-                      }, // To ensure background is shown if image fails
-                      backgroundColor: Colors.grey[700],
-                      child: const Text(
-                        '',
-                      ), // Fallback background
-                    ),
-                  ),
-                ),
-              ),
-            ],
+              ],
           ),
         ],
       ),
@@ -215,11 +172,13 @@ class _PinnedTabItem extends StatelessWidget {
   final IconData icon;
   final bool isActive;
   final VoidCallback onTap;
+  final VoidCallback onRestore; // New: Callback for restoring
 
   const _PinnedTabItem({
     required this.icon,
     this.isActive = false,
     required this.onTap,
+    required this.onRestore,
   });
 
   @override
@@ -229,12 +188,15 @@ class _PinnedTabItem extends StatelessWidget {
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
-          onTap: onTap,
+          onTap: isActive
+              ? onTap
+              : onRestore, // Restore if inactive, select if active
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 4),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: isActive ? Colors.blue.withOpacity(0.2) : Colors.transparent,
+              color:
+                  isActive ? Colors.blue.withOpacity(0.2) : Colors.transparent,
               borderRadius: BorderRadius.circular(4),
             ),
             child: Icon(
@@ -255,6 +217,7 @@ class _OpenTabItem extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onClose;
   final VoidCallback onPin;
+  final VoidCallback onRestore; // New: Callback for restoring
 
   const _OpenTabItem({
     required this.label,
@@ -262,42 +225,67 @@ class _OpenTabItem extends StatelessWidget {
     required this.onTap,
     required this.onClose,
     required this.onPin,
+    required this.onRestore,
   });
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
+    final theme = Theme.of(context);
+    final activeColor = theme.colorScheme.primary;
+    final inactiveColor = theme.colorScheme.surface.withOpacity(0.5);
+
+    return GestureDetector(
+      onTap:
+          isActive ? onTap : onRestore, // Restore if inactive, select if active
+      onSecondaryTapUp: (details) {
+        final RenderBox overlay =
+            Overlay.of(context).context.findRenderObject() as RenderBox;
+        showMenu(
+          context: context,
+          position: RelativeRect.fromRect(
+            details.globalPosition &
+                const Size(40, 40), // smaller rect, the touch area
+            Offset.zero & overlay.size, // Bigger rect, the entire screen
+          ),
+          items: [
+            const PopupMenuItem(
+              value: 'pin',
+              child: Text('Pin Tab'),
+            ),
+          ],
+        ).then((value) {
+          if (value == 'pin') {
+            onPin();
+          }
+        });
+      },
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: isActive ? Colors.blue.withOpacity(0.2) : Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(4),
+          margin: const EdgeInsets.only(top: 12, right: 2, left: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: ShapeDecoration(
+            color: isActive ? activeColor : inactiveColor,
+            shape: _ChromeTabBorder(),
           ),
           child: Row(
             children: [
               Text(
                 label,
                 style: TextStyle(
-                  color: isActive ? Colors.blue : Colors.white,
+                  color: isActive
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.onSurface,
                   fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
               const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.push_pin_outlined),
-                iconSize: 16,
-                color: Colors.white,
-                onPressed: onPin,
-                tooltip: 'Pin Tab',
-              ),
-              IconButton(
                 icon: const Icon(Icons.close),
-                iconSize: 16,
-                color: Colors.white,
+                iconSize: 14,
+                color: isActive
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.onSurface,
                 onPressed: onClose,
                 tooltip: 'Close Tab',
               ),
@@ -309,14 +297,51 @@ class _OpenTabItem extends StatelessWidget {
   }
 }
 
-class _NavItem extends StatefulWidget {
+class _ChromeTabBorder extends ShapeBorder {
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.zero;
 
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) {
+    return getOuterPath(rect, textDirection: textDirection);
+  }
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
+    const radius = 8.0;
+    return Path()
+      ..moveTo(rect.left, rect.bottom)
+      ..lineTo(rect.left, rect.top + radius)
+      ..arcToPoint(
+        Offset(rect.left + radius, rect.top),
+        radius: const Radius.circular(radius),
+        clockwise: true,
+      )
+      ..lineTo(rect.right - radius, rect.top)
+      ..arcToPoint(
+        Offset(rect.right, rect.top + radius),
+        radius: const Radius.circular(radius),
+        clockwise: true,
+      )
+      ..lineTo(rect.right, rect.bottom)
+      ..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {}
+
+  @override
+  ShapeBorder scale(double t) => this;
+}
+
+class _NavItem extends StatefulWidget {
   final String label;
   final bool isActive;
   final VoidCallback onTap;
 
   const _NavItem({
     required this.label,
+    required this.isActive,
     required this.onTap,
   });
 
@@ -363,9 +388,6 @@ class _NavItemState extends State<_NavItem> {
                     ),
                   )
                 : null,
-            // Subtle background change on hover for non-active tabs
-            // color: _hovering && !widget.isActive ? Colors.white.withOpacity(0.05) : Colors.transparent,
-            // borderRadius: BorderRadius.circular(4), // Optional: if you want rounded hover background
           ),
           child: Text(
             widget.label,
