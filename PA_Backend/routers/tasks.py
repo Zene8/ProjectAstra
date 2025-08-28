@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session
 from google.auth.transport.requests import Request as GoogleAuthRequest
@@ -52,8 +53,8 @@ def read_tasks(
     tasks = tasks_crud.get_tasks(db, user_id=user_id, skip=skip, limit=limit)
     return tasks
 
-@router.get("/users/{user_id}/google_tasks/")
-async def get_google_tasks(user_id: int, db: Session = Depends(get_session), user: User = Depends(get_current_user)):
+@router.get("/tasks/google/tasks") # Changed path
+async def get_google_tasks(db: Session = Depends(get_session), user: User = Depends(get_current_user)):
     if not user.google_credentials:
         raise HTTPException(status_code=401, detail="Google account not linked")
 
@@ -67,7 +68,93 @@ async def get_google_tasks(user_id: int, db: Session = Depends(get_session), use
     results = service.tasks().list(tasklist='@default', maxResults=10).execute()
     items = results.get('items', [])
 
-    return {"tasks": items}
+    task_list = []
+    for item in items:
+        task_list.append({
+            "id": item['id'],
+            "title": item['title'],
+            "isDone": item['status'] == 'completed',
+            "dueDate": item.get('due') # Google Tasks API returns 'due'
+        })
+    return task_list # Return list directly
+
+@router.post("/tasks/google/tasks") # Changed path
+async def create_google_task(task: tasks_schemas.GoogleTask, db: Session = Depends(get_session), user: User = Depends(get_current_user)):
+    if not user.google_credentials:
+        raise HTTPException(status_code=401, detail="Google account not linked")
+
+    credentials = Credentials.from_authorized_user_info(user.google_credentials)
+
+    if credentials.expired and credentials.refresh_token:
+        credentials.refresh(GoogleAuthRequest())
+
+    service = build('tasks', 'v1', credentials=credentials)
+
+    created_task = service.tasks().insert(tasklist='@default', body=task.dict()).execute()
+    return { # Return a dictionary matching the Task model
+        "id": created_task['id'],
+        "title": created_task['title'],
+        "isDone": created_task['status'] == 'completed',
+        "dueDate": created_task.get('due')
+    }
+
+@router.put("/tasks/google/tasks/{list_id}/{task_id}") # Changed path
+async def update_google_task(list_id: str, task_id: str, task: tasks_schemas.GoogleTask, db: Session = Depends(get_session), user: User = Depends(get_current_user)):
+    if not user.google_credentials:
+        raise HTTPException(status_code=401, detail="Google account not linked")
+
+    credentials = Credentials.from_authorized_user_info(user.google_credentials)
+
+    if credentials.expired and credentials.refresh_token:
+        credentials.refresh(GoogleAuthRequest())
+
+    service = build('tasks', 'v1', credentials=credentials)
+
+    updated_task = service.tasks().update(tasklist=list_id, task=task_id, body=task.dict()).execute()
+    return { # Return a dictionary matching the Task model
+        "id": updated_task['id'],
+        "title": updated_task['title'],
+        "isDone": updated_task['status'] == 'completed',
+        "dueDate": updated_task.get('due')
+    }
+
+@router.delete("/tasks/google/tasks/{list_id}/{task_id}") # Changed path
+async def delete_google_task(list_id: str, task_id: str, db: Session = Depends(get_session), user: User = Depends(get_current_user)):
+    if not user.google_credentials:
+        raise HTTPException(status_code=401, detail="Google account not linked")
+
+    credentials = Credentials.from_authorized_user_info(user.google_credentials)
+
+    if credentials.expired and credentials.refresh_token:
+        credentials.refresh(GoogleAuthRequest())
+
+    service = build('tasks', 'v1', credentials=credentials)
+
+    service.tasks().delete(tasklist=list_id, task=task_id).execute()
+    return {"message": "Task deleted successfully"}
+
+@router.get("/tasks/google/tasklists") # New endpoint for task lists
+async def get_google_task_lists(db: Session = Depends(get_session), user: User = Depends(get_current_user)):
+    if not user.google_credentials:
+        raise HTTPException(status_code=401, detail="Google account not linked")
+
+    credentials = Credentials.from_authorized_user_info(user.google_credentials)
+
+    if credentials.expired and credentials.refresh_token:
+        credentials.refresh(GoogleAuthRequest())
+
+    service = build('tasks', 'v1', credentials=credentials)
+
+    results = service.tasklists().list().execute()
+    items = results.get('items', [])
+    
+    task_lists = []
+    for item in items:
+        task_lists.append({
+            "id": item['id'],
+            "title": item['title']
+        })
+    return task_lists
 
 @router.put("/users/{user_id}/tasks/{task_id}", response_model=tasks_schemas.Task)
 def update_task_for_user(

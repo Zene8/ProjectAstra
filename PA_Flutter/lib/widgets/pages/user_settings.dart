@@ -435,6 +435,144 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
     }
   }
 
+  Future<void> _connectOutlook(BuildContext context) async {
+    try {
+      final user = widget.authService.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You must be logged in to connect Outlook.')),
+        );
+        return;
+      }
+
+      // Get the JWT token for the current user
+      final idToken = await user.getIdToken();
+      if (idToken == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to get authentication token.')),
+        );
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://localhost:5000/api/outlook/auth/login'),
+        headers: {
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final String authorizationUrl = data['authorization_url'];
+        if (await canLaunchUrl(Uri.parse(authorizationUrl))) {
+          await launchUrl(Uri.parse(authorizationUrl));
+        } else {
+          throw 'Could not launch $authorizationUrl';
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to initiate Outlook connection: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error connecting Outlook: $e')),
+      );
+    }
+  }
+
+  Future<void> _connectMicrosoftToDo(BuildContext context) async {
+    try {
+      final user = widget.authService.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You must be logged in to connect Microsoft To Do.')),
+        );
+        return;
+      }
+
+      // Get the JWT token for the current user
+      final idToken = await user.getIdToken();
+      if (idToken == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to get authentication token.')),
+        );
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://localhost:5000/api/todo/auth/login'),
+        headers: {
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final String authorizationUrl = data['authorization_url'];
+        if (await canLaunchUrl(Uri.parse(authorizationUrl))) {
+          await launchUrl(Uri.parse(authorizationUrl));
+        } else {
+          throw 'Could not launch $authorizationUrl';
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to initiate Microsoft To Do connection: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error connecting Microsoft To Do: $e')),
+      );
+    }
+  }
+
+  Future<void> _connectOneDrive(BuildContext context) async {
+    try {
+      final user = widget.authService.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You must be logged in to connect OneDrive.')),
+        );
+        return;
+      }
+
+      // Get the JWT token for the current user
+      final idToken = await user.getIdToken();
+      if (idToken == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to get authentication token.')),
+        );
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('http://localhost:5000/api/onedrive/auth/login'),
+        headers: {
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final String authorizationUrl = data['authorization_url'];
+        if (await canLaunchUrl(Uri.parse(authorizationUrl))) {
+          await launchUrl(Uri.parse(authorizationUrl));
+        } else {
+          throw 'Could not launch $authorizationUrl';
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to initiate OneDrive connection: ${response.body}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error connecting OneDrive: $e')),
+      );
+    }
+  }
+
   void _showThemePicker(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
     showDialog(
@@ -655,6 +793,39 @@ class _UserSettingsPageState extends State<UserSettingsPage> {
                   ),
                   onTap: () {
                     _connectGoogleTasks(context);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.mail_outline, color: listTileIconColor), // Outlook icon
+                  title: Text('Outlook (Microsoft 365)', style: listTileTitleStyle),
+                  trailing: ElevatedButton(
+                    onPressed: () => _connectOutlook(context),
+                    child: Text("Connect"),
+                  ),
+                  onTap: () {
+                    _connectOutlook(context);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.checklist_rtl_outlined, color: listTileIconColor), // To Do icon
+                  title: Text('Microsoft To Do', style: listTileTitleStyle),
+                  trailing: ElevatedButton(
+                    onPressed: () => _connectMicrosoftToDo(context),
+                    child: Text("Connect"),
+                  ),
+                  onTap: () {
+                    _connectMicrosoftToDo(context);
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.cloud_outlined, color: listTileIconColor), // OneDrive icon
+                  title: Text('OneDrive (Microsoft 365)', style: listTileTitleStyle),
+                  trailing: ElevatedButton(
+                    onPressed: () => _connectOneDrive(context),
+                    child: Text("Connect"),
+                  ),
+                  onTap: () {
+                    _connectOneDrive(context);
                   },
                 ),
                 const SizedBox(height: 32),

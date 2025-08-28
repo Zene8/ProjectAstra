@@ -14,15 +14,23 @@ from config import (
     NCC_REMOTE_VENV_PATH,
 )
 
-async def run_inference_on_ncc(prompt: str, chat_history: list) -> Tuple[str, str]:
+from typing import Tuple, List, Optional
+from models import ApplicationContext
+
+async def run_inference_on_ncc(prompt: str, chat_history: list, context: Optional[List[ApplicationContext]] = None) -> Tuple[str, str]:
     session_id = str(uuid.uuid4())
     remote_session_dir = f"{NCC_REMOTE_JOB_DIR}/{session_id}"
     local_session_dir = f"/tmp/{session_id}"
 
     os.makedirs(local_session_dir, exist_ok=True)
 
-    # Serialize chat history and prompt
+    # Serialize context, chat history and prompt
     with open(f"{local_session_dir}/input.txt", "w") as f:
+        # Write context as a JSON string, followed by a separator
+        if context:
+            import json
+            f.write(json.dumps([c.dict() for c in context]) + "\n")
+        f.write("---CONTEXT_END---" + "\n") # Separator to easily parse context on remote side
         f.write(f"{prompt}\n")
         for entry in chat_history:
             f.write(f"{entry['message']}\n{entry['response']}\n")

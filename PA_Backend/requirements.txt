@@ -11,3 +11,5 @@ langgraph
 langchain-openai
 plaid-python
 pandas
+llama-cpp-python
+jira-cloud-python

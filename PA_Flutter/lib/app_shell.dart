@@ -12,6 +12,7 @@ import 'package:projectastra/widgets/pages/single_tab_page.dart';
 import 'package:projectastra/routes/app_routes.dart';
 // Import Provider if you're using it for AuthService
 import 'package:provider/provider.dart';
+import 'package:project_astra/services/application_context_notifier.dart';
 
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
@@ -277,54 +278,57 @@ class _AppShellState extends State<AppShell> {
     final isMobile = width < 600;
     final isDesktopOrTablet = width >= 600;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Column(
-        children: [
-          if (isDesktopOrTablet)
-            DesktopNavbar(
-              activeTab: _activeDesktopContentId,
-              openTabs: _openTabs,
-              pinnedTabs: _pinnedTabs,
-              onTabSelected: _onDesktopTabSelected,
-              onTabClosed: _handleTabClosed,
-              onTabPinned: _handleTabPinned,
-              onChatToggle: _handleDesktopChatToggle,
-              onProfilePressed: _handleDesktopProfilePressed,
-              onAppLauncherPressed: _showAppLauncher,
-              onRestoreTab: (tabId) =>
-                  mainContentDesktopKey.currentState?.restoreWidget(tabId),
-              onProfilePicturePressed:
-                  _handleProfilePicturePressed, // Pass the new callback
+    return ChangeNotifierProvider(
+      create: (context) => ApplicationContextNotifier(),
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Column(
+          children: [
+            if (isDesktopOrTablet)
+              DesktopNavbar(
+                activeTab: _activeDesktopContentId,
+                openTabs: _openTabs,
+                pinnedTabs: _pinnedTabs,
+                onTabSelected: _onDesktopTabSelected,
+                onTabClosed: _handleTabClosed,
+                onTabPinned: _handleTabPinned,
+                onChatToggle: _handleDesktopChatToggle,
+                onProfilePressed: _handleDesktopProfilePressed,
+                onAppLauncherPressed: _showAppLauncher,
+                onRestoreTab: (tabId) =>
+                    mainContentDesktopKey.currentState?.restoreWidget(tabId),
+                onProfilePicturePressed:
+                    _handleProfilePicturePressed, // Pass the new callback
+              ),
+            Expanded(
+              child: isMobile
+                  ? PageView(
+                      controller: _mobilePageController,
+                      children: _mobilePages,
+                      onPageChanged: (index) {
+                        if (_currentMobilePageIndex != index) {
+                          setState(() {
+                            _currentMobilePageIndex = index;
+                          });
+                        }
+                      },
+                    )
+                  : MainContentDesktop(
+                      key: mainContentDesktopKey,
+                      initialActiveWidgetId: _activeDesktopContentId,
+                      authService: _authService,
+                    ),
             ),
-          Expanded(
-            child: isMobile
-                ? PageView(
-                    controller: _mobilePageController,
-                    children: _mobilePages,
-                    onPageChanged: (index) {
-                      if (_currentMobilePageIndex != index) {
-                        setState(() {
-                          _currentMobilePageIndex = index;
-                        });
-                      }
-                    },
-                  )
-                : MainContentDesktop(
-                    key: mainContentDesktopKey,
-                    initialActiveWidgetId: _activeDesktopContentId,
-                    authService: _authService,
-                  ),
-          ),
-          if (isMobile)
-            BottomNavBar(
-              currentIndex: _currentMobilePageIndex,
-              onTabSelected: _navigateToMobilePage,
-              onHomePressed: () => _navigateToMobilePage(0),
-              onChatPressed: () => _navigateToMobilePage(1),
-              onSettingsPressed: () => _navigateToMobilePage(2),
-            ),
-        ],
+            if (isMobile)
+              BottomNavBar(
+                currentIndex: _currentMobilePageIndex,
+                onTabSelected: _navigateToMobilePage,
+                onHomePressed: () => _navigateToMobilePage(0),
+                onChatPressed: () => _navigateToMobilePage(1),
+                onSettingsPressed: () => _navigateToMobilePage(2),
+              ),
+          ],
+        ),
       ),
     );
   }

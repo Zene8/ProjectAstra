@@ -1,10 +1,8 @@
 from pydantic import BaseModel
-import datetime
+from typing import Optional, List
 
 class EmailBase(BaseModel):
     subject: str
-    sender: str
-    recipients: str
     body: str
 
 class EmailCreate(EmailBase):
@@ -12,8 +10,12 @@ class EmailCreate(EmailBase):
 
 class Email(EmailBase):
     id: int
-    timestamp: datetime.datetime
-    user_id: int
+    owner_id: int
 
     class Config:
         orm_mode = True
+
+class GoogleEmail(BaseModel):
+    to: List[str]
+    subject: str
+    message: str

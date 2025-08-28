@@ -19,6 +19,22 @@ class User(SQLModel, table=True):
     plaid_access_token: Optional[str] = Field(default=None)
     plaid_item_id: Optional[str] = Field(default=None)
 
+    # Outlook integration
+    outlook_access_token: Optional[str] = Field(default=None)
+    outlook_refresh_token: Optional[str] = Field(default=None)
+
+    # Microsoft To Do integration
+    todo_access_token: Optional[str] = Field(default=None)
+    todo_refresh_token: Optional[str] = Field(default=None)
+
+    # OneDrive integration
+    onedrive_access_token: Optional[str] = Field(default=None)
+    onedrive_refresh_token: Optional[str] = Field(default=None)
+
+    # Jira integration
+    jira_access_token: Optional[str] = Field(default=None)
+    jira_refresh_token: Optional[str] = Field(default=None)
+
     messages: List["Message"] = Relationship(back_populates="user")
     transactions: List["Transaction"] = Relationship(back_populates="owner")
     assets: List["Asset"] = Relationship(back_populates="owner")
@@ -51,6 +67,12 @@ class MessageCreate(BaseModel):
     user_id: int
     message: str
     response: str
+
+class ApplicationContext(BaseModel):
+    appName: str
+    activeItemId: Optional[str] = None
+    activeItemContent: Optional[str] = None
+    openItems: Optional[List[dict]] = None
 
 # --- FINANCE MODULE MODELS ---
 

@@ -1,3 +1,4 @@
+
 # Project Astra: Development Plan
 
 ## 1. Project Overview & Vision
@@ -31,6 +32,13 @@ Project Astra aims to be a personal AI agent orchestration platform, providing a
     *   Google Tasks API
     *   Google Gmail API
     *   Brave Search API
+
+### 2.3. Backend (PA_Java_Services)
+
+*   **Technology:** Spring Boot (Java) for microservices.
+*   **Services:**
+    *   **auth-service:** Handles user authentication and authorization.
+    *   **finance-service:** Provides financial data and reporting.
 
 ## 3. Development Phases & Roadmap
 
@@ -94,11 +102,11 @@ Based on the plan above, here's where we stand:
     *   Minimize Animation: **COMPLETE**
     *   Permanent Close: **COMPLETE** (already handled by `_closeWidget`).
     *   Sticky Windows: **COMPLETE**
-    *   Snap Layouts with Visual Picker: **COMPLETE** (basic implementation with dialog).
+    *   Snap Layouts with Visual Picker: **COMPLETE**
     *   Hotkeys for Layouts: **COMPLETE** (using `hotkey_manager`).
-    *   Adjacent Window Linking (basic `linkedWindows` property and `_toggleLink` placeholder): **IN PROGRESS** (needs full implementation of linked movement/resizing).
-    *   Smart Layouts (intelligent overlap resolution): **COMPLETE** (basic implementation with `_findNonOverlappingPosition`).
-    *   Layout Previews (in snap dialog): **COMPLETE** (basic icons).
+    *   Adjacent Window Linking: **COMPLETE**
+    *   Smart Layouts (intelligent overlap resolution): **COMPLETE**
+    *   Layout Previews (in snap dialog): **COMPLETE**
 *   **Theming System:** **COMPLETE** (Dart-based themes, theme picker).
 *   **Google Service Connection Options:** **COMPLETE** (Calendar, Tasks, Gmail connection buttons in User Settings).
 *   **Widget Content Expansion:** **COMPLETE** (Docs and Code editors fill window).
@@ -111,24 +119,33 @@ Based on the plan above, here's where we stand:
     *   `documents.py`: **COMPLETE** (Google Drive integration with OAuth, local CRUD for documents implemented).
     *   `messages.py`: **COMPLETE** (Full CRUD for local messages).
 *   **Phase 1.5 - Basic Suites Implementation:**
-    *   **Calendar:** **COMPLETE** (Local CRUD, Google Calendar API integration with OAuth and event retrieval).
-    *   **Tasks:** **COMPLETE** (Local CRUD, Google Tasks API integration with OAuth and task retrieval).
-    *   **Email:** **COMPLETE** (Local CRUD, Google Gmail API integration with OAuth and email retrieval).
-    *   **Finance:** **COMPLETE** (Full CRUD for transactions, assets, and categories).
+    *   **Calendar:** **COMPLETE**
+    *   **Tasks:** **COMPLETE**
+    *   **Email:** **COMPLETE**
+    *   **Finance:** **COMPLETE**
+
+### Backend (PA_Java_Services)
+
+*   **auth-service:** **IN PROGRESS** (Basic security configuration implemented).
+*   **finance-service:** **IN PROGRESS** (Basic CRUD service for transactions implemented).
 
 ## 5. To-Do List (Next Immediate Steps)
 
-Based on the evaluation, the most immediate and impactful next steps are to fully implement the **Adjacent Window Linking** on the frontend.
+With the completion of Phase 1.5, the next steps will focus on Phase 2.
 
-1.  **Frontend - Adjacent Window Linking:**
-    *   **Refine `_updateWindowPosition` and `_updateWindowSize`:** Ensure that when a window is moved or resized, all its linked windows also move/resize proportionally and maintain their relative positions.
-    *   **Visual Feedback for Linking:** Enhance the visual indicator for linked windows (e.g., a more prominent border, a connecting line).
-    *   **Adjacency Detection Refinement:** Improve the `_findAdjacentWindow` logic to be more robust and consider various adjacency scenarios (e.g., partial overlap, corner adjacency).
-    *   **Link/Unlink UI:** Ensure the link button accurately reflects the linked state and allows for easy unlinking.
+1.  **Advanced AI:**
+    *   Contextual AI understanding across applications.
+    *   Proactive suggestions and automation.
+    *   Personalized learning and adaptation.
+2.  **Deeper Integrations:**
+    *   Microsoft Office 365 (Outlook, OneDrive, To Do).
+    *   Project Management Tools (Jira, Trello).
+    *   Communication Platforms (Slack, Discord).
+3.  **Customizable Workflows:** Allow users to define custom automation rules.
 
 ## 6. Coding Standards & Conventions
 
-*   **Language:** Dart (Flutter) for frontend, Python (FastAPI) for backend.
+*   **Language:** Dart (Flutter) for frontend, Python (FastAPI) and Java (Spring Boot) for backend.
 *   **Formatting:** Adhere to `dart format` for Flutter and `black` for Python.
 *   **Naming Conventions:**
     *   Dart: `camelCase` for variables/functions, `PascalCase` for classes, `snake_case` for file names.
@@ -163,4 +180,8 @@ Based on the evaluation, the most immediate and impactful next steps are to full
 5.  **Build & Run:** `docker-compose up --build`
 6.  **Access API Docs:** `http://localhost:5000/docs` (Swagger UI)
 
----
+### Backend (PA_Java_Services)
+
+1.  **Install Java 17 and Maven.**
+2.  **Navigate to the service directory (e.g., `PA_Java_Services/auth-service`).**
+3.  **Run the application:** `mvn spring-boot:run`

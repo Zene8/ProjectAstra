@@ -1,3 +1,4 @@
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session
 from google.auth.transport.requests import Request as GoogleAuthRequest
@@ -73,3 +74,48 @@ async def get_google_events(user_id: int, db: Session = Depends(get_session), us
     events = events_result.get('items', [])
 
     return {"events": events}
+
+@router.post("/users/{user_id}/google_events/")
+async def create_google_event(user_id: int, event: calendar_schemas.GoogleCalendarEvent, db: Session = Depends(get_session), user: User = Depends(get_current_user)):
+    if not user.google_credentials:
+        raise HTTPException(status_code=401, detail="Google account not linked")
+
+    credentials = Credentials.from_authorized_user_info(user.google_credentials)
+
+    if credentials.expired and credentials.refresh_token:
+        credentials.refresh(GoogleAuthRequest())
+
+    service = build('calendar', 'v3', credentials=credentials)
+
+    event = service.events().insert(calendarId='primary', body=event.dict()).execute()
+    return {"event": event}
+
+@router.put("/users/{user_id}/google_events/{event_id}")
+async def update_google_event(user_id: int, event_id: str, event: calendar_schemas.GoogleCalendarEvent, db: Session = Depends(get_session), user: User = Depends(get_current_user)):
+    if not user.google_credentials:
+        raise HTTPException(status_code=401, detail="Google account not linked")
+
+    credentials = Credentials.from_authorized_user_info(user.google_credentials)
+
+    if credentials.expired and credentials.refresh_token:
+        credentials.refresh(GoogleAuthRequest())
+
+    service = build('calendar', 'v3', credentials=credentials)
+
+    updated_event = service.events().update(calendarId='primary', eventId=event_id, body=event.dict()).execute()
+    return {"event": updated_event}
+
+@router.delete("/users/{user_id}/google_events/{event_id}")
+async def delete_google_event(user_id: int, event_id: str, db: Session = Depends(get_session), user: User = Depends(get_current_user)):
+    if not user.google_credentials:
+        raise HTTPException(status_code=401, detail="Google account not linked")
+
+    credentials = Credentials.from_authorized_user_info(user.google_credentials)
+
+    if credentials.expired and credentials.refresh_token:
+        credentials.refresh(GoogleAuthRequest())
+
+    service = build('calendar', 'v3', credentials=credentials)
+
+    service.events().delete(calendarId='primary', eventId=event_id).execute()
+    return {"message": "Event deleted successfully"}

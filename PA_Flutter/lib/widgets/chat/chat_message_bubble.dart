@@ -349,7 +349,6 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                                 ],
                                 [
                                   ...md.ExtensionSet.gitHubWeb.inlineSyntaxes,
-                                  LatexInlineSyntax(),
                                 ],
                               ),
                               styleSheet: mainMarkdownStyleSheet,
@@ -366,6 +365,28 @@ class _ChatMessageBubbleState extends State<ChatMessageBubble> {
                 ),
             ],
           ),
+          // Suggested Actions (only for AI messages)
+          if (!isUser && widget.message.suggestedActions != null && widget.message.suggestedActions!.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(
+                left: !isUser ? (36.0 + 8.0) : 0, // Align with AI message bubble
+                top: 8.0,
+              ),
+              child: Wrap(
+                spacing: 8.0, // Space between buttons
+                runSpacing: 4.0, // Space between lines of buttons
+                children: widget.message.suggestedActions!.map((action) {
+                  return ElevatedButton(
+                    onPressed: () {
+                      // TODO: Implement actual action handling based on action.type and action.payload
+                      print('Suggested Action Tapped: ${action.type} - ${action.description} - Payload: ${action.payload}');
+                      // Example: Navigator.push(context, MaterialPageRoute(builder: (context) => CalendarPage(initialEvent: action.payload)));
+                    },
+                    child: Text(action.description),
+                  );
+                }).toList(),
+              ),
+            ),
         ],
       ),
     );

@@ -4,12 +4,24 @@ import 'package:hive_flutter/hive_flutter.dart'; // Import Hive Flutter
 import 'package:projectastra/models/chat_models.dart'; // Your models
 import 'package:projectastra/widgets/chat/chat_input_bar.dart';
 import 'package:projectastra/widgets/chat/chat_message_bubble.dart';
+import 'package:provider/provider.dart'; // Add provider import
+import 'package:project_astra/services/application_context_notifier.dart'; // Add notifier import
 import 'package:projectastra/services/chat_api_service.dart';
+import 'package:projectastra/services/frontend_local_ai_agent.dart'; // Import local AI agent
+import 'package:projectastra/models/chat_models.dart'; // Import for SuggestedAction
 import 'package:projectastra/widgets/chat/code_element_highlighter.dart'
     show CodeElementHighlighter, kDefaultDarkCodeTheme, kDefaultLightCodeTheme;
 
 // Define this constant, possibly in a shared file or your main.dart
 const String chatMessagesBoxName = 'chatMessagesBox';
+
+enum AIBackend {
+  backendAPI, // Represents the API Gateway, which then routes
+  frontendLocal,
+  backendLocal, // Backend running locally on the same machine as PA_Backend
+  gcp, // Backend running on GCP
+  ncc, // Backend running on NCC
+}
 
 class ChatPanel extends StatefulWidget {
   final VoidCallback? onClose;
@@ -33,12 +45,29 @@ class _ChatPanelState extends State<ChatPanel> {
   final TextEditingController _textController = TextEditingController();
   bool _isSending = false;
 
-  final ChatApiService _chatApiService = ChatApiService();
-  late Box<ChatMessage> _chatMessagesBox; // Hive box instance
+  late ChatApiService _chatApiService;
+  late FrontendLocalAIAgent _frontendLocalAIAgent; // Declare local AI agent
+  late Box<ChatMessage> _chatMessagesBox;
+
+  AIBackend _selectedAIBackend = AIBackend.backendAPI; // Default to backend API
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize ChatApiService here, after context is available
+    _chatApiService = ChatApiService(
+      Provider.of<ApplicationContextNotifier>(context, listen: false),
+    );
+
+    // Initialize FrontendLocalAIAgent
+    // TODO: Place your GGUF model file in assets/models/ and update the path.
+    // Example: assets/models/tinyllama-1.1b-chat-v1.0.Q4_0.gguf
+    // Make sure to add 'assets/models/' to your pubspec.yaml
+    _frontendLocalAIAgent = FrontendLocalAIAgent(
+      modelPath: 'assets/models/your_model_name.gguf', // Placeholder
+    );
+    _frontendLocalAIAgent.init(); // Initialize the local AI agent
+
     // Get the already opened box from main.dart
     _chatMessagesBox = Hive.box<ChatMessage>(chatMessagesBoxName);
     _loadMessages();
@@ -116,11 +145,39 @@ class _ChatPanelState extends State<ChatPanel> {
     _scrollToBottom();
 
     try {
-      final Map<String, dynamic> apiResponse =
-          await _chatApiService.sendMessageToBackend(userInputText);
-      final String actualFinalAnswer = apiResponse['final_answer'] as String? ??
-          "Sorry, I couldn't get a response.";
-      final String? actualThinkingProcess = apiResponse['thinking'] as String?;
+      String actualFinalAnswer = "Sorry, I couldn't get a response.";
+      String? actualThinkingProcess;
+
+      if (_selectedAIBackend == AIBackend.backendAPI) {
+        // Determine the specific backend to request from the API Gateway
+        String? specificBackend;
+        // If the user explicitly selected a backend that routes through the API Gateway
+        // (e.g., backendLocal, gcp, ncc), pass that as aiBackend.
+        // Otherwise, the API Gateway will use its default routing logic.
+        if (_selectedAIBackend == AIBackend.backendLocal) {
+          specificBackend = "backendLocal";
+        } else if (_selectedAIBackend == AIBackend.gcp) {
+          specificBackend = "gcp";
+        } else if (_selectedAIBackend == AIBackend.ncc) {
+          specificBackend = "ncc";
+        }
+
+        final Map<String, dynamic> apiResponse =
+            await _chatApiService.sendMessageToBackend(userInputText, aiBackend: specificBackend);
+        actualFinalAnswer = apiResponse['final_answer'] as String? ?? actualFinalAnswer;
+        actualThinkingProcess = apiResponse['thinking'] as String?;
+      } else if (_selectedAIBackend == AIBackend.frontendLocal) {
+        // For local AI, we'll stream the response
+        StringBuffer streamedResponse = StringBuffer();
+        await for (final token in _frontendLocalAIAgent.generateResponse(userInputText)) {
+          streamedResponse.write(token);
+          // Update UI with streamed tokens (optional, for real-time display)
+          // This part would require more complex UI updates, for now, we'll wait for full response
+          // You might want to update the placeholder message's text here
+        }
+        actualFinalAnswer = streamedResponse.toString();
+        actualThinkingProcess = "Generated locally by FrontendLocalAIAgent.";
+      }
 
       if (!mounted) return;
 
@@ -130,6 +187,7 @@ class _ChatPanelState extends State<ChatPanel> {
         thinkingText: actualThinkingProcess,
         timestamp: placeholderMessage
             .timestamp, // Keep placeholder's timestamp or use DateTime.now()
+        suggestedActions: apiResponse['suggested_actions'] as List<SuggestedAction>?, // Pass suggested actions
       );
 
       // Update the placeholder in Hive using its specific key
@@ -247,12 +305,48 @@ class _ChatPanelState extends State<ChatPanel> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 8.0),
-            child: ChatInputBar(
-              textController: _textController,
-              onSend: _handleSend,
-              onVoice: _handleVoice,
-              onAttach: _handleAttach,
-              disabled: _isSending,
+            child: Column(
+              children: [
+                DropdownButton<AIBackend>(
+                  value: _selectedAIBackend,
+                  onChanged: (AIBackend? newValue) {
+                    if (newValue != null) {
+                      setState(() {
+                        _selectedAIBackend = newValue;
+                      });
+                    }
+                  },
+                  items: const <DropdownMenuItem<AIBackend>>[
+                    DropdownMenuItem<AIBackend>(
+                      value: AIBackend.backendAPI,
+                      child: Text('Backend API (Auto-Route)'), // Changed text
+                    ),
+                    DropdownMenuItem<AIBackend>(
+                      value: AIBackend.frontendLocal,
+                      child: Text('Frontend Local (Lightweight)'), // Changed text
+                    ),
+                    DropdownMenuItem<AIBackend>(
+                      value: AIBackend.backendLocal,
+                      child: Text('Backend Local (Powerful)'),
+                    ),
+                    DropdownMenuItem<AIBackend>(
+                      value: AIBackend.gcp,
+                      child: Text('GCP (Powerful)'),
+                    ),
+                    DropdownMenuItem<AIBackend>(
+                      value: AIBackend.ncc,
+                      child: Text('NCC (Powerful)'),
+                    ),
+                  ],
+                ),
+                ChatInputBar(
+                  textController: _textController,
+                  onSend: _handleSend,
+                  onVoice: _handleVoice,
+                  onAttach: _handleAttach,
+                  disabled: _isSending,
+                ),
+              ],
             ),
           ),
         ],

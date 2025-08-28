@@ -5,17 +5,21 @@ import 'package:flutter/foundation.dart'
     show kDebugMode, kIsWeb; // Added kIsWeb
 import 'package:http/http.dart' as http;
 
+import 'package:project_astra/services/application_context_notifier.dart'; // Import the notifier
+import 'package:project_astra/models/application_context.dart'; // Import the model
+
 class ChatApiService {
   static const String _androidEmulatorHost = "10.0.2.2";
   static const String _defaultHost = "127.0.0.1";
-  static const String _port = "8000";
-  static const String _path = "/chat";
+  static const String _port = "5000";
+  static const String _path = "/api/chat";
   static const String _productionApiUrl =
       "https://your-production-api.com/chat"; // REPLACE
 
   late final String _chatApiUrl;
+  final ApplicationContextNotifier _applicationContextNotifier; // Add notifier instance
 
-  ChatApiService() {
+  ChatApiService(this._applicationContextNotifier) { // Modify constructor
     if (kDebugMode) {
       String host = _defaultHost;
       if (!kIsWeb && Platform.isAndroid) {
@@ -32,17 +36,30 @@ class ChatApiService {
     }
   }
 
-  Future<Map<String, dynamic>> sendMessageToBackend(String userMessage) async {
+  Future<Map<String, dynamic>> sendMessageToBackend(String userMessage, {String? aiBackend}) async {
     try {
+      final List<Map<String, dynamic>> contextsJson = _applicationContextNotifier.contexts
+          .map((context) => context.toJson())
+          .toList();
+
+      final Map<String, dynamic> requestBody = {
+        "message": userMessage,
+        "context": contextsJson,
+      };
+
+      if (aiBackend != null) {
+        requestBody["ai_backend"] = aiBackend;
+      }
+
       print(
-        "ChatApiService: Sending message to $_chatApiUrl with body: ${jsonEncode({"message": userMessage})}",
+        "ChatApiService: Sending message to $_chatApiUrl with body: ${jsonEncode(requestBody)}",
       );
       final response = await http.post(
         Uri.parse(_chatApiUrl),
         headers: {
           "Content-Type": "application/json; charset=UTF-8",
         }, // Specify charset
-        body: jsonEncode({"message": userMessage}),
+        body: jsonEncode(requestBody),
       );
 
       // Decode with utf8 to handle special characters correctly
@@ -53,7 +70,15 @@ class ChatApiService {
 
         if (responseData is Map<String, dynamic> &&
             responseData.containsKey('final_answer')) {
-          // Ensure 'thinking' is also present, provide default if not
+          // Parse suggested actions
+          List<SuggestedAction>? suggestedActions;
+          if (responseData.containsKey('suggested_actions') &&
+              responseData['suggested_actions'] is List) {
+            suggestedActions = (responseData['suggested_actions'] as List)
+                .map((e) => SuggestedAction.fromJson(e as Map<String, dynamic>))
+                .toList();
+          }
+
           return {
             'final_answer':
                 responseData['final_answer'] as String? ??
@@ -61,6 +86,7 @@ class ChatApiService {
             'thinking':
                 responseData['thinking'] as String? ??
                 "", // Default empty string for thinking
+            'suggested_actions': suggestedActions, // Include suggested actions
           };
         } else {
           print("Unexpected response format from backend: $responseData");
